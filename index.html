@@ -87,7 +87,7 @@
 
           subjects[subject] = subjects[subject] || {
             projects: [],
-            excercises: []
+            exercises: []
           }
           
           if (id === 'project') {
@@ -96,7 +96,7 @@
             continue
           }
 
-          subjects[subject].excercises.push(repo)
+          subjects[subject].exercises.push(repo)
         }
 
         const classes = document.querySelector('#classes')
@@ -105,22 +105,22 @@
 
         const entries = Object.entries(subjects)
         let i = 0
-        for (const [subject, { excercises, projects }] of entries) {
+        for (const [subject, { exercises, projects }] of entries) {
           const lastSubject = ++i === entries.length
 
           const subjectWall = lastSubject ? ' ' : '│'
 
           const s = c('', [
             c('', `${lastSubject ? '└' : '├'}─ ${subject}`),
-            excercises.length && c('', [`${subjectWall}  ${projects.length ? '├' : '└'}─ excercises`, ...excercises.map((e, i) => {
+            exercises.length && c('', [`${subjectWall}  ${projects.length ? '├' : '└'}─ exercises`, ...exercises.map((e, i) => {
               const a = c('block', e.name, 'a')
               a.href = e.html_url
 
-              const entry = c('flex', [`${subjectWall}  ${projects.length ? '│' : ' '}  ${i + 1 === excercises.length ? '└' : '├'}─ `, a, e.description && ` - ${e.description}`])
+              const entry = c('flex', [`${subjectWall}  ${projects.length ? '│' : ' '}  ${i + 1 === exercises.length ? '└' : '├'}─ `, a, e.description && ` - ${e.description}`])
               return entry
             })]),
 
-            projects.length && excercises.length && `${subjectWall}  |`,
+            projects.length && exercises.length && `${subjectWall}  |`,
 
             projects.length && c('', [`${subjectWall}  └─ projects`, ...projects.map((e, i) => {
               const a = c('block', e.name, 'a')
