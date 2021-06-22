@@ -6,6 +6,11 @@
   "author": "Kasper Seweryn <github@wvffle.net>",
   "private": true,
   "devDependencies": {
+    "pre-commit": "^1.2.2",
     "surge": "^0.23.0"
-  }
+  },
+  "scripts": {
+    "surge-publish": "surge ."
+  },
+  "pre-commit": ["surge-publish"]
 }
