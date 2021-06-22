@@ -1,0 +1,141 @@
+<!doctype html>
+<html>
+  <head>
+    <style>
+      html, body {
+        font-family: monospace;
+        font-size: 10px;
+        color: #444;
+        padding: 0;
+        margin: 0;
+      }
+
+      #classes, #others {
+        white-space: pre;
+        padding: 17px;
+      }
+
+      .block {
+        display: block;
+      }
+
+      .flex {
+        display: flex;
+      }
+
+      a {
+        text-decoration: none;
+        color: #0af;
+      }
+
+      a:hover {
+        text-decoration: underline;
+        color: #fa0;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="flex">
+      <div id="classes"></div>
+      <div id="others"></div>
+    </div>
+    <script>
+      const c = (className = '', content = '', tag = 'div') => {
+        const $el = document.createElement(tag)
+        $el.className = className.replace(/\./g, ' ')
+
+        if (typeof content === 'string') {
+          $el.textContent = content
+        } else {
+          for (const el of content) {
+            if (!el) continue
+            if (typeof el === 'string') {
+              $el.appendChild(c('', el))
+              continue
+            }
+
+            $el.appendChild(el)
+          }
+        }
+
+        return $el
+      } 
+
+      Promise.resolve().then(async () => {
+        const res = await fetch('https://api.github.com/orgs/pb-students/repos?per_page=9999')
+        const subjects = {}
+        const others = []
+
+        const repos = await res.json()
+        for (const repo of repos.sort((a, b) => a.name < b.name ? -1 : (a.name > b.name ? 1 : 0))) {
+          const [subject, id] = repo.name.split('-', 2)
+
+          if (!id) {
+            others.push(repo)
+            continue
+          }
+
+          subjects[subject] = subjects[subject] || {
+            projects: [],
+            excercises: []
+          }
+          
+          if (id === 'project') {
+            subjects[subject].projects.push(repo)
+
+            continue
+          }
+
+          subjects[subject].excercises.push(repo)
+        }
+
+        const classes = document.querySelector('#classes')
+        const othersEl = document.querySelector('#others')
+        classes.appendChild(c('', 'classes'))
+
+        const entries = Object.entries(subjects)
+        let i = 0
+        for (const [subject, { excercises, projects }] of entries) {
+          const lastSubject = ++i === entries.length
+
+          const subjectWall = lastSubject ? ' ' : '│'
+
+          const s = c('', [
+            c('', `${lastSubject ? '└' : '├'}─ ${subject}`),
+            excercises.length && c('', [`${subjectWall}  ${projects.length ? '├' : '└'}─ excercises`, ...excercises.map((e, i) => {
+              const a = c('block', e.name, 'a')
+              a.href = e.html_url
+
+              const entry = c('flex', [`${subjectWall}  ${projects.length ? '│' : ' '}  ${i + 1 === excercises.length ? '└' : '├'}─ `, a, e.description && ` - ${e.description}`])
+              return entry
+            })]),
+
+            projects.length && excercises.length && `${subjectWall}  |`,
+
+            projects.length && c('', [`${subjectWall}  └─ projects`, ...projects.map((e, i) => {
+              const a = c('block', e.name, 'a')
+              a.href = e.html_url
+
+              const entry = c('flex', [`${subjectWall}     ${i + 1 === projects.length ? '└' : '├'}─ `, a, e.description && ` - ${e.description}`])
+              return entry
+            })]),
+            c('', subjectWall),
+          ])
+
+          classes.appendChild(s)
+        }
+
+        othersEl.appendChild(c('', 'other'))
+        i = 0
+
+        for (const other of others) {
+          const a = c('block', other.name, 'a')
+
+          a.href = other.html_url
+          othersEl.appendChild(c('flex', [++i === others.length ? '└─ ' : '├─ ', a, other.description && ` - ${other.description}`]))
+        }
+      })
+    </script>
+  </body>
+</html>
+

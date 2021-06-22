@@ -1,0 +1,11 @@
+{
+  "name": "pb-index",
+  "version": "1.0.0",
+  "main": "index.js",
+  "license": "MIT",
+  "author": "Kasper Seweryn <github@wvffle.net>",
+  "private": true,
+  "devDependencies": {
+    "surge": "^0.23.0"
+  }
+}
