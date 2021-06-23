@@ -76,7 +76,14 @@
         const subjects = {}
         const others = []
 
-        const repos = await res.json()
+        let repos = await res.json()
+        if (repos.message) {
+          console.error(repos.message)
+          repos = JSON.parse(localStorage.getItem('repos') || '[]')
+        }
+
+        localStorage.setItem('repos', JSON.stringify(repos))
+
         for (const repo of repos.sort((a, b) => a.name < b.name ? -1 : (a.name > b.name ? 1 : 0))) {
           const [subject, id] = repo.name.split('-', 2)
 
@@ -111,7 +118,7 @@
           const subjectWall = lastSubject ? ' ' : '│'
 
           const s = c('', [
-            c('', `${lastSubject ? '└' : '├'}─ ${subject}`),
+            c('flex', [`${lastSubject ? '└' : '├'}─ `, c('', subject, 'strong')]),
             exercises.length && c('', [`${subjectWall}  ${projects.length ? '├' : '└'}─ exercises`, ...exercises.map((e, i) => {
               const a = c('block', e.name, 'a')
               a.href = e.html_url
