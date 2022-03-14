@@ -1,163 +1,194 @@
 <!doctype html>
 <html>
-  <head>
-    <style>
-      html, body {
-        font-family: monospace;
-        font-size: 10px;
-        color: #444;
-        padding: 0;
-        margin: 0;
-      }
 
-      #classes, #others {
-        white-space: pre;
-        padding: 17px;
-      }
+<head>
+  <style>
+    html,
+    body {
+      font-family: monospace;
+      font-size: 10px;
+      color: #444;
+      padding: 0;
+      margin: 0;
+    }
 
-      #info {
-        padding: 17px;
-        font-size: 14px;
-      }
+    #classes,
+    #others {
+      white-space: pre;
+      padding: 17px;
+    }
 
-      .block {
-        display: block;
-      }
+    #info {
+      padding: 17px;
+      font-size: 14px;
+    }
 
-      .flex {
-        display: flex;
-      }
+    .block {
+      display: block;
+    }
 
-      a {
-        text-decoration: none;
-        color: #0af;
-      }
+    .flex {
+      display: flex;
+    }
 
-      a:hover {
-        text-decoration: underline;
-        color: #fa0;
-      }
-    </style>
-  </head>
-  <body>
+    a {
+      text-decoration: none;
+      color: #0af;
+    }
 
-    <div id="info">
-      Index of repositories from <a href="https://github.com/pb-students">pb-students</a> organization. <br>
-      If you want to contribute, reach out to <a href="https://matrix.to/#/@waff:wvffle.net">@waff:wvffle.net</a> or wvffle on <a href="https://web.libera.chat/">libera.chat</a>.
-    </div>
-    <div class="flex">
-      <div id="classes"></div>
-      <div id="others"></div>
-    </div>
-    <script>
-      const c = (className = '', content = '', tag = 'div') => {
-        const $el = document.createElement(tag)
-        $el.className = className.replace(/\./g, ' ')
+    a:hover {
+      text-decoration: underline;
+      color: #fa0;
+    }
+  </style>
+</head>
 
-        if (typeof content === 'string') {
-          $el.textContent = content
-        } else {
-          for (const el of content) {
-            if (!el) continue
-            if (typeof el === 'string') {
-              $el.appendChild(c('', el))
-              continue
+<body>
+
+  <div id="info">
+    Index of repositories from <a href="https://github.com/pb-students">pb-students</a> organization. <br>
+    If you want to contribute, reach out to <a href="https://matrix.to/#/@waff:wvffle.net">@waff:wvffle.net</a> or
+    wvffle on <a href="https://web.libera.chat/">libera.chat</a>.
+  </div>
+  <div class="flex">
+    <div id="classes">Loading data from github...</div>
+    <div id="others"></div>
+  </div>
+  <script>
+    // NOTE: Modified version of https://github.com/A1rPun/formatree
+    const formatree = function (structure = {}, options = {}) {
+      const newLine = '\n';
+      const limit = options.limit;
+      const spacing = options.spacing;
+      const values = options.values;
+      const header = 'classes' + newLine;
+      const footer = options.footer || '';
+      const sibling = options.sibling || '├── ';
+      const lastSibling = options.lastSibling || '└── ';
+      const indent = options.indent || '│   ';
+      const lastIndent = options.lastIndent || '    ';
+      const parent = options.parent || '';
+
+      function formatree(obj, result, prepend, level) {
+        if (limit && level >= limit)
+          return result;
+        let i = 0;
+        const lastIndex = Object.keys(obj).length - 1;
+        for (let prop in obj) {
+          let val = obj[prop];
+          result += spacing ? (prepend + indent + newLine).repeat(spacing) : '';
+          result += prepend + (i === lastIndex ? lastSibling : sibling);
+          result += level === 0
+            ? c('', prop, 'strong').outerHTML
+            : prop
+
+          if (!Array.isArray(val)) {
+            result += typeof val === 'object'
+              ? formatree(
+                val,
+                parent + newLine,
+                prepend + (i === lastIndex ? lastIndent : indent),
+                level + 1
+              )
+              : (values ? ` (${val})` : '') + newLine;
+          } else {
+            const lastIndex = val.length - 1
+            const arrPrepend = prepend + indent
+            for (let j = 0; j < lastIndex + 1; ++j) {
+              result += newLine
+              result += arrPrepend + (j === lastIndex ? lastSibling : sibling);
+
+              const a = c('', val[j].name, 'a')
+              a.href = val[j].html_url
+              result += a.outerHTML;
             }
-
-            $el.appendChild(el)
+            result += newLine
           }
+
+          i++;
         }
+        return result;
+      }
+      return formatree(structure, header, '', 0) + footer;
+    };
+  </script>
+  <script>
+    const c = (className = '', content = '', tag = 'div') => {
+      const $el = document.createElement(tag)
+      $el.className = className.replace(/\./g, ' ')
 
-        return $el
-      } 
-
-      Promise.resolve().then(async () => {
-        const res = await fetch('https://api.github.com/orgs/pb-students/repos?per_page=9999')
-        const subjects = {}
-        const others = []
-
-        let repos = await res.json()
-        if (repos.message) {
-          console.error(repos.message)
-          repos = JSON.parse(localStorage.getItem('repos') || '[]')
-        }
-
-        localStorage.setItem('repos', JSON.stringify(repos))
-
-        for (const repo of repos.sort((a, b) => a.name < b.name ? -1 : (a.name > b.name ? 1 : 0))) {
-          const [subject, id] = repo.name.split('-', 2)
-
-          if (!id) {
-            others.push(repo)
+      if (typeof content === 'string') {
+        $el.textContent = content
+      } else {
+        for (const el of content) {
+          if (!el) continue
+          if (typeof el === 'string') {
+            $el.appendChild(c('', el))
             continue
           }
 
-          subjects[subject] = subjects[subject] || {
-            projects: [],
-            exercises: []
-          }
-          
-          if (id === 'project') {
-            subjects[subject].projects.push(repo)
+          $el.appendChild(el)
+        }
+      }
 
-            continue
-          }
+      return $el
+    }
 
-          subjects[subject].exercises.push(repo)
+    Promise.resolve().then(async () => {
+      const classes = document.querySelector('#classes')
+      const interval = setInterval(() => classes.innerHTML += '.', 200)
+      const res = await fetch('https://api.github.com/orgs/pb-students/repos?per_page=9999')
+      const subjects = {}
+      const others = []
+
+      let repos = await res.json()
+      if (repos.message) {
+        console.error(repos.message)
+        repos = JSON.parse(localStorage.getItem('repos') || '[]')
+      }
+
+      localStorage.setItem('repos', JSON.stringify(repos))
+
+      for (const repo of repos.sort((a, b) => a.name < b.name ? -1 : (a.name > b.name ? 1 : 0))) {
+        const [subject, id] = repo.name.split('-', 2)
+
+        if (!id) {
+          others.push(repo)
+          continue
         }
 
-        const classes = document.querySelector('#classes')
-        const othersEl = document.querySelector('#others')
-        classes.appendChild(c('', 'classes'))
-
-        const entries = Object.entries(subjects)
-        let i = 0
-        for (const [subject, { exercises, projects }] of entries) {
-          const lastSubject = ++i === entries.length
-
-          const subjectWall = lastSubject ? ' ' : '│'
-
-          const s = c('', [
-            c('flex', [`${lastSubject ? '└' : '├'}─ `, c('', subject, 'strong')]),
-            exercises.length && c('', [`${subjectWall}  ${projects.length ? '├' : '└'}─ exercises`, ...exercises.map((e, i) => {
-              const a = c('block', e.name, 'a')
-              a.href = e.html_url
-
-              const entry = c('flex', [`${subjectWall}  ${projects.length ? '│' : ' '}  ${i + 1 === exercises.length ? '└' : '├'}─ `, a, e.description && ` - ${e.description}`])
-              return entry
-            })]),
-
-            projects.length && exercises.length && `${subjectWall}  |`,
-
-            projects.length && c('', [`${subjectWall}  └─ projects`, ...projects.map((e, i) => {
-              const a = c('block', e.name, 'a')
-              a.href = e.html_url
-
-              const entry = c('flex', [`${subjectWall}     ${i + 1 === projects.length ? '└' : '├'}─ `, a, e.description && ` - ${e.description}`])
-              return entry
-            })]),
-            c('', subjectWall),
-          ])
-
-          classes.appendChild(s)
+        subjects[subject] = subjects[subject] || {
+          projects: [],
+          exercises: [],
+          raports: []
         }
 
-        othersEl.appendChild(c('', 'other'))
-        i = 0
-
-        for (const other of others) {
-          const a = c('block', other.name, 'a')
-
-          a.href = other.html_url
-          othersEl.appendChild(c('flex', [++i === others.length ? '└─ ' : '├─ ', a, other.description && ` - ${other.description}`]))
+        if (id === 'project') {
+          subjects[subject].projects.push(repo)
+          continue
         }
-      })
-    </script>
 
-    <noscript>
-      <img src="https://shynet.wvffle.net/ingress/8954aebd-4175-4866-9685-2971f1d331ac/pixel.gif">
-    </noscript>
-    <script defer src="https://shynet.wvffle.net/ingress/8954aebd-4175-4866-9685-2971f1d331ac/script.js"></script>
-  </body>
+        // TODO: Add dynamic grouping
+        if (id === 'raport') {
+          subjects[subject].raports.push(repo)
+          continue
+        }
+
+        subjects[subject].exercises.push(repo)
+      }
+
+      console.log(subjects)
+
+      const othersEl = document.querySelector('#others')
+      clearInterval(interval)
+      classes.innerHTML = formatree(subjects)
+    })
+  </script>
+
+  <noscript>
+    <img src="https://shynet.wvffle.net/ingress/8954aebd-4175-4866-9685-2971f1d331ac/pixel.gif">
+  </noscript>
+  <script defer src="https://shynet.wvffle.net/ingress/8954aebd-4175-4866-9685-2971f1d331ac/script.js"></script>
+</body>
+
 </html>
-
